@@ -1,0 +1,19 @@
+[package]
+name = "epicinium_keycode"
+version = "1.1.0"
+authors = ["Sander in 't Veld <sanderintveld@hotmail.com>"]
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+description = "A small utility crate for generating lossy unique ids encoded with base32."
+homepage = "https://abunchofhacks.coop"
+repository = "https://github.com/SLiV9/keycode-rs"
+
+[features]
+defaults = []
+
+[dependencies]
+serde = "^1.0"
+
+[dev-dependencies]
+rand = "0.7"
