@@ -20,12 +20,15 @@ use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
 
+/// A 60-bit unique id that can be encoded
+/// as a big-endian base32-word of length 12 (since 32^12 = 2^60).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Keycode(pub u64);
 
-// Create a lossy keycode by interleaving a 16 bit key and the 44 least-
-// significant bits of a data element into a 60 bit number that can be encoded
-// as a big-endian base32-word of length 12 (since 32^12 = 2^60).
+/// Create a lossy keycode by interleaving a 16 bit key and the 44
+/// least-significant bits of a data element into a 60 bit number.
+/// If the data element is enough to ensure uniqueness, varying the key helps
+/// visually identifying the Keycode.
 pub fn keycode(key: u16, data: u64) -> Keycode
 {
 	// The left-most 5 bits of the keycode are based on the 5 most-significant

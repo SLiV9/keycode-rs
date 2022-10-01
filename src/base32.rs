@@ -13,8 +13,8 @@
  * Sander in 't Veld (sander@abunchofhacks.coop)
  */
 
-// Convert a 5-bit nickel, i.e. a value between 0 and 31 (inclusive), to
-// a letter in the Base32 alphabet, which is an alphanumeric 8-bit character.
+/// Convert a 5-bit nickel, i.e. a value between 0 and 31 (inclusive), to
+/// a letter in the Base32 alphabet, which is an alphanumeric 8-bit character.
 pub fn letter_from_nickel(value: u8) -> u8
 {
 	// Crockford Base32 alphabet where a = 10 and i, l, o and u are skipped.
@@ -25,11 +25,11 @@ pub fn letter_from_nickel(value: u8) -> u8
 	];
 
 	debug_assert!(value <= 31);
-	ALPHABET[value as usize]
+	ALPHABET[(value & 0x1F) as usize]
 }
 
-// Convert a (case insensitive) letter in the Crockford Base32 alphabet
-// to a 5-bit nickel, i.e. a value between 0 and 31 (inclusive).
+/// Convert a (case insensitive) letter in the Crockford Base32 alphabet
+/// to a 5-bit nickel, i.e. a value between 0 and 31 (inclusive).
 pub fn nickel_from_letter(x: u8) -> Result<u8, DecodeError>
 {
 	match x
@@ -65,7 +65,7 @@ pub fn nickel_from_letter(x: u8) -> Result<u8, DecodeError>
 	}
 }
 
-// Convert a big-endian bitstring to a big-endian base32 alphanumeric string.
+/// Convert a big-endian bitstring to a big-endian base32 alphanumeric string.
 pub fn encode(data: &[u8]) -> String
 {
 	// Calculate the length of the resulting word, rounding up.
@@ -114,10 +114,13 @@ pub fn encode(data: &[u8]) -> String
 	String::from_utf8(word).unwrap()
 }
 
-// Convert a big-endian base32 string back into a big-endian base256 number. A
-// byte array of size S=5N+K is encoded as a word of length l(S)=8N+f(K), where
-// f(0) = 0, f(1) = 2, f(2) = 4, f(3) = 5 and f(4) = 7. Note that l() is
-// injective, so we can determine the size S of a byte array given l(S).
+/// Convert a big-endian base32 string back into a big-endian base256 number.
+///
+/// A byte array of size S=5N+K is encoded as a word of length l(S)=8N+f(K),
+/// where f(0) = 0, f(1) = 2, f(2) = 4, f(3) = 5 and f(4) = 7. Because l() is
+/// injective, we can determine the size S of a byte array given l(S).
+///
+/// Decoded a string that is not the result of [encode] is an error.
 pub fn decode(word: &str) -> Result<Vec<u8>, DecodeError>
 {
 	if !word.is_ascii()
@@ -200,27 +203,40 @@ pub fn decode(word: &str) -> Result<Vec<u8>, DecodeError>
 	Ok(data)
 }
 
+/// An error that occurred while decoding a Base32 string
+/// or [crate::keycode::Keycode].
 #[derive(Debug)]
 pub enum DecodeError
 {
+	/// A character occurred in the decoded string that does not belong to
+	/// the Crockford Base32 alphabet.
 	InvalidLetter
 	{
 		letter: u8
 	},
+	/// The decoded string cannot be the result of [encode] because its first
+	/// character is wrong.
 	NonZeroLeadingBits
 	{
 		source: String
 	},
+	/// The decoded string is too long to be an encoded keycode.
+	///
+	/// Only returned by [crate::keycode::Keycode].
 	WordTooLong
 	{
 		source: String,
 		max_length_in_bits: usize,
 	},
+	/// The decoded string is too short to be an encoded keycode.
+	///
+	/// Only returned by [crate::keycode::Keycode].
 	WordTooShort
 	{
 		source: String,
 		min_length_in_bits: usize,
 	},
+	/// The decoded string contains characters outside of US-ASCII.
 	NonAscii
 	{
 		source: String
