@@ -40,6 +40,7 @@ pub fn keycode(key: u16, data: u64) -> Keycode
 	let mut k_bitstring = key as u64;
 	let mut d_bitstring = data;
 	let mut result: u64 = 0;
+	let mut placement_offset = 0;
 
 	// We fill the word from right (least-significant) to left (most-sign.).
 	for i in (0..12).rev()
@@ -55,8 +56,9 @@ pub fn keycode(key: u16, data: u64) -> Keycode
 		let r_bits = (k_bits << (5 - bite)) | d_bits;
 		k_bitstring >>= bite;
 		d_bitstring >>= 5 - bite;
-		// Then convert the 5-bit index to Base32.
-		result = (result << 5) | r_bits;
+		// Then add these 5-bits to the result.
+		result |= r_bits << placement_offset;
+		placement_offset += 5;
 	}
 
 	debug_assert!(result < (1 << 60));
@@ -67,7 +69,7 @@ impl std::fmt::Display for Keycode
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
 	{
-		let mut bits = self.0;
+		let mut bits: u64 = self.0;
 		let mut word = vec![0u8; 12];
 
 		// We fill the word from right (least-significant) to left (most-sign.).
@@ -155,6 +157,7 @@ impl<'de> Deserialize<'de> for Keycode
 mod tests
 {
 	use super::*;
+	use pretty_assertions::assert_eq;
 
 	#[test]
 	fn test_inverse() -> Result<(), base32::DecodeError>
@@ -171,6 +174,27 @@ mod tests
 			let decoded: Keycode = repr.parse()?;
 			assert_eq!(decoded, keycode, "(repr = {})", repr);
 			assert_eq!(decoded.to_string(), repr);
+		}
+		Ok(())
+	}
+
+	#[test]
+	fn test_endianness() -> Result<(), base32::DecodeError>
+	{
+		for _ in 0..1000
+		{
+			let key: u16 = rand::random();
+			let key2: u16 = rand::random();
+			let data: u64 = rand::random();
+			let data2: u64 = rand::random();
+			let keycode1 = keycode(key, data);
+			let keycode_with_key2 = keycode(key2, data);
+			let keycode_with_data2 = keycode(key, data2);
+			let repr1 = keycode1.to_string();
+			let repr_with_key2 = keycode_with_key2.to_string();
+			let repr_with_data2 = keycode_with_data2.to_string();
+			assert_eq!(&repr1[6..12], &repr_with_key2[6..12]);
+			assert_eq!(&repr1[0..1], &repr_with_data2[0..1]);
 		}
 		Ok(())
 	}
